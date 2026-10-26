@@ -1,0 +1,388 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ---- Build + Test + Detect Version Changes ----
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      core-changed: ${{ steps.versions.outputs.core-changed }}
+      cli-changed: ${{ steps.versions.outputs.cli-changed }}
+      vscode-changed: ${{ steps.versions.outputs.vscode-changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # No server config is baked into any build: clients find their self-hosted server at runtime.
+      - run: pnpm build
+
+      - run: pnpm typecheck
+
+      - run: pnpm test
+
+      - name: Detect version changes
+        id: versions
+        run: |
+          check_npm_version() {
+            local pkg=$1
+            local npm_name=$2
+            local key=$3
+            CURRENT=$(node -p "require('./packages/${pkg}/package.json').version")
+            PUBLISHED=$(npm view "${npm_name}" version 2>/dev/null || echo "0.0.0")
+            if [ "$CURRENT" != "$PUBLISHED" ]; then
+              echo "${key}=true" >> "$GITHUB_OUTPUT"
+              echo "  ${npm_name}: ${PUBLISHED} → ${CURRENT} (publish)"
+            else
+              echo "${key}=false" >> "$GITHUB_OUTPUT"
+              echo "  ${npm_name}: ${CURRENT} (already published)"
+            fi
+          }
+          check_vscode_version() {
+            CURRENT=$(node -p "require('./packages/vscode/package.json').version")
+            PUBLISHED=$(npx -y @vscode/vsce show ophan.ophan 2>/dev/null | awk '/^Version:/{print $2}' || echo "0.0.0")
+            if [ "$CURRENT" != "$PUBLISHED" ]; then
+              echo "vscode-changed=true" >> "$GITHUB_OUTPUT"
+              echo "  vscode: ${PUBLISHED} → ${CURRENT} (publish)"
+            else
+              echo "vscode-changed=false" >> "$GITHUB_OUTPUT"
+              echo "  vscode: ${CURRENT} (already published)"
+            fi
+          }
+          echo "Version check:"
+          check_npm_version "core" "@ophan/core" "core-changed"
+          check_npm_version "cli" "@ophan/cli" "cli-changed"
+          check_vscode_version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            packages/core/dist/
+            packages/cli/dist/
+            packages/vscode/dist/
+            packages/vscode/webview-dist/
+          retention-days: 1
+
+  # ---- Publish @ophan/core to npm (trusted publishing via OIDC) ----
+  publish-core:
+    needs: build-and-test
+    if: needs.build-and-test.outputs.core-changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm is needed for `pnpm pack` which replaces workspace:* protocol
+      # references with real version numbers in the tarball.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Latest npm required for OIDC trusted publishing token exchange
+      - run: npm install -g npm@latest
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: packages/
+
+      # Two-step publish: pnpm pack → npm publish.
+      # pnpm pack replaces workspace:* with real versions in the tarball.
+      # npm publish is required (not pnpm publish) for OIDC trusted publishing.
+      # See docs/release-lifecycle/publishing.md for details.
+      - run: pnpm pack
+        working-directory: packages/core
+      - run: npm publish packages/core/ophan-core-*.tgz --access public
+
+  # ---- Publish @ophan/cli to npm (trusted publishing via OIDC) ----
+  publish-cli:
+    needs: [build-and-test, publish-core]
+    if: |
+      always() &&
+      needs.build-and-test.result == 'success' &&
+      needs.build-and-test.outputs.cli-changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm is needed for `pnpm pack` which replaces workspace:* protocol
+      # references with real version numbers in the tarball.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      # Latest npm required for OIDC trusted publishing token exchange
+      - run: npm install -g npm@latest
+
+      # pnpm install is required so pnpm pack can resolve workspace:* references
+      # (it needs @ophan/core's package.json to determine the version number)
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: packages/
+
+      # Two-step publish: pnpm pack → npm publish.
+      # pnpm pack replaces workspace:* with real versions in the tarball.
+      # npm publish is required (not pnpm publish) for OIDC trusted publishing.
+      # See docs/release-lifecycle/publishing.md for details.
+      - run: pnpm pack
+        working-directory: packages/cli
+      - run: npm publish packages/cli/ophan-cli-*.tgz --access public
+
+  # ---- Build VS Code Extension (platform-specific with multi-Electron native binaries) ----
+  # Each matrix job compiles better-sqlite3 for multiple Electron ABIs, packages a VSIX,
+  # and uploads it as an artifact. The publish job downloads all artifacts and publishes atomically.
+  # See docs/release-lifecycle/native-binary-bundling.md for context.
+  build-vscode:
+    needs: build-and-test
+    if: needs.build-and-test.outputs.vscode-changed == 'true'
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            target: darwin-arm64
+            npm_config_arch: arm64
+          - os: macos-latest
+            target: darwin-x64
+            npm_config_arch: x64
+          - os: ubuntu-latest
+            target: linux-x64
+            npm_config_arch: x64
+          - os: ubuntu-24.04-arm
+            target: linux-arm64
+            npm_config_arch: arm64
+          - os: windows-latest
+            target: win32-x64
+            npm_config_arch: x64
+          - os: windows-latest
+            target: win32-arm64
+            npm_config_arch: arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+
+    env:
+      npm_config_arch: ${{ matrix.npm_config_arch }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: packages/
+
+      # Install deps for this platform (downloads correct prebuilt native binary)
+      - run: pnpm install --frozen-lockfile
+
+      # Build better-sqlite3 for every editor runtime we support: one binary per Electron ABI
+      # (VS Code, Cursor, Windsurf, Antigravity each bundle a different Electron) plus one per
+      # Node major for plain-Node hosts (code-server, Remote SSH, WSL). native-loader.ts picks
+      # the right one at runtime. The ABI lists live in scripts/build-native.sh.
+      - name: Build native binaries
+        working-directory: packages/vscode
+        shell: bash
+        run: ./scripts/build-native.sh
+
+      - name: Package VSIX
+        working-directory: packages/vscode
+        run: npx @vscode/vsce package --target ${{ matrix.target }} --no-git-tag-version --no-dependencies
+
+      - name: Verify native binaries in VSIX
+        working-directory: packages/vscode
+        shell: bash
+        run: |
+          mkdir -p /tmp/vsix-check
+          VSIX=$(ls *.vsix | head -1)
+          unzip -q -o "$VSIX" -d /tmp/vsix-check
+          echo "=== Native binaries in $VSIX ==="
+          find /tmp/vsix-check -name "better_sqlite3.node" | while read f; do
+            echo "  $(echo $f | sed 's|/tmp/vsix-check/extension/||'): $(file -b "$f" | head -c 80)"
+          done
+          BINARY_COUNT=$(find /tmp/vsix-check/extension/native -name "better_sqlite3.node" 2>/dev/null | wc -l | tr -d ' ')
+          echo "Native binary count: $BINARY_COUNT"
+          if [ "$BINARY_COUNT" -lt 13 ]; then
+            echo "ERROR: Expected at least 13 native binaries (10 Electron ABIs + node-127, node-137, node)"
+            exit 1
+          fi
+          echo "VSIX size: $(du -sh "$VSIX" | cut -f1)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix-${{ matrix.target }}
+          path: packages/vscode/*.vsix
+          retention-days: 7
+
+  # ---- Publish VS Code Extension (atomic -- all platforms or none) ----
+  publish-vscode:
+    needs: build-vscode
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: vsix-*
+          merge-multiple: true
+
+      - name: Verify all platform VSIXs present
+        shell: bash
+        run: |
+          echo "=== Downloaded VSIXs ==="
+          ls -la *.vsix 2>/dev/null || true
+          EXPECTED=6
+          ACTUAL=$(find . -name '*.vsix' | wc -l | tr -d ' ')
+          echo "Found $ACTUAL of $EXPECTED expected VSIXs"
+          if [ "$ACTUAL" -lt "$EXPECTED" ]; then
+            echo "ERROR: Missing platform VSIXs. Expected $EXPECTED, found $ACTUAL."
+            echo "All platforms must build successfully before publishing."
+            exit 1
+          fi
+
+      - name: Publish to VS Code Marketplace
+        shell: bash
+        run: |
+          # Publish may fail with "already exists" if the version was already
+          # published by an earlier CI run. Treat that as success.
+          # set +e is required because GitHub Actions uses set -eo pipefail,
+          # which would kill the script before our error handler runs.
+          set +e
+          mapfile -t VSIXS < <(find . -name '*.vsix')
+          npx @vscode/vsce publish --packagePath "${VSIXS[@]}" 2>&1 | tee /tmp/vsce-output.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          if [ $EXIT_CODE -ne 0 ]; then
+            if grep -q "already exists" /tmp/vsce-output.log; then
+              echo "Version already published -- skipping (not an error)"
+            else
+              exit $EXIT_CODE
+            fi
+          fi
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: Publish to Open VSX
+        shell: bash
+        run: |
+          # One call per platform VSIX; tolerate re-runs of an already published version.
+          find . -name '*.vsix' | while read -r VSIX; do
+            set +e
+            npx -y ovsx publish "$VSIX" -p "$OVSX_PAT" 2>&1 | tee /tmp/ovsx-output.log
+            EXIT_CODE=${PIPESTATUS[0]}
+            set -e
+            if [ $EXIT_CODE -ne 0 ] && ! grep -qi "already" /tmp/ovsx-output.log; then
+              exit $EXIT_CODE
+            fi
+          done
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+  # ---- GitHub Release with every platform VSIX attached ----
+  github-release:
+    needs: [build-and-test, build-vscode]
+    # Runs even when the extension version didn't change (build-vscode skipped)
+    if: always() && needs.build-and-test.result == 'success' && needs.build-vscode.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        if: needs.build-vscode.result == 'success'
+        with:
+          pattern: vsix-*
+          merge-multiple: true
+          path: vsix
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: vsix/*.vsix
+          fail_on_unmatched_files: false
+
+  # ---- Webapp image for self-hosters: ghcr.io/<owner>/ophan-webapp ----
+  publish-webapp-image:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ophan-webapp
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      # Supabase settings are read at container start, so the image holds no config.
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/webapp/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

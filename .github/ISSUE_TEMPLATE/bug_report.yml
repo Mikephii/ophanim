@@ -1,0 +1,40 @@
+name: Bug report
+description: Something doesn't work, or a finding is wrong
+labels: [bug]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Where
+      options:
+        - VS Code extension
+        - CLI
+        - Analysis results (a false positive or a missed issue)
+        - Self-hosted server / web dashboard
+        - Docs
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: For a wrong finding, include the code (or a minimal version of it) and the finding.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Ophan version, editor and version (e.g. VS Code 1.107, Cursor 2.1), OS, Node.js version
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The "Ophan" output channel in the editor, or the CLI output. Remove any API keys.
+      render: text

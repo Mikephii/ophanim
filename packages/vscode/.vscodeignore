@@ -1,0 +1,14 @@
+src/**
+node_modules/**
+**/*.ts
+!dist/**
+!webview-dist/**
+!resources/**
+!native/**
+tsconfig.json
+scripts/**
+esbuild.mjs
+vitest.config.ts
+**/*.test.*
+**/*.map
+.vscodeignore

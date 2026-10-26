@@ -1,0 +1,7 @@
+{
+  "name": "acme-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small, deliberately vulnerable API used to record Ophan's demo videos. Do not deploy.",
+  "type": "module"
+}

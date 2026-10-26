@@ -1,0 +1,75 @@
+{
+  "name": "@ophan/core",
+  "version": "0.1.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas.ts",
+    "./test-utils": "./src/test-utils.ts"
+  },
+  "files": [
+    "dist",
+    "ophan_logo.png",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "README.md"
+  ],
+  "publishConfig": {
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": "./dist/index.js",
+      "./schemas": "./dist/schemas.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "pretest": "node -e \"new (require('better-sqlite3'))(':memory:')\" 2>/dev/null || npx node-gyp rebuild --directory=$(node -e \"process.stdout.write(require('path').dirname(require.resolve('better-sqlite3/package.json')))\")",
+    "test": "vitest run",
+    "prepack": "cp ../../THIRD_PARTY_NOTICES.md .",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "better-sqlite3": "^12.11.1",
+    "glob": "^13.0.0",
+    "graphology": "^0.26.0",
+    "graphology-communities-louvain": "^2.0.2",
+    "graphology-metrics": "^2.4.0",
+    "graphology-types": "^0.24.8",
+    "p-limit": "^6.2.0",
+    "p-retry": "^7.1.1",
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.0.3",
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "author": "Michael Collins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mikephii/ophanim.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/Mikephii/ophanim#readme",
+  "bugs": {
+    "url": "https://github.com/Mikephii/ophanim/issues"
+  },
+  "description": "Ophan's analysis engine: function extraction, content hashing, Claude analysis, SQLite storage",
+  "keywords": [
+    "security",
+    "sast",
+    "static-analysis",
+    "claude",
+    "ai",
+    "code-review",
+    "documentation"
+  ]
+}

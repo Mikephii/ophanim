@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+webview-dist/
+
+# Build outputs
+dist/
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+!.vscode/extensions.json
+.idea/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+
+# Turbo/cache
+.turbo/
+
+# Ophan analysis databases (per-repo, never committed -- rebuilt via analyze or sync)
+.ophan/
+*.db-journal
+
+# Fumadocs MDX generated
+.source/
+.map/
+
+# Nitro build output
+.output/
+.vercel/
+
+# node-gyp output (contains absolute local paths)
+build/config.gypi
+**/build/config.gypi
+/build/
+
+# VS Code extension native binaries (built during CI, not checked in)
+packages/vscode/native/
+
+
+# Copied in at pack/build time from the repo root
+packages/*/THIRD_PARTY_NOTICES.md
+
+# Packaged extensions and npm tarballs
+*.vsix
+*.tgz
+
+# Demo rig output (videos, raw frames, build artifacts, analysis cache)
+demo/out/

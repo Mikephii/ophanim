@@ -1,0 +1,61 @@
+{
+  "name": "@ophan/cli",
+  "version": "0.1.0",
+  "files": [
+    "dist",
+    "ophan_logo.png",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "README.md"
+  ],
+  "bin": {
+    "ophan": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "node esbuild.mjs",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "prepack": "cp ../../THIRD_PARTY_NOTICES.md .",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "@ophan/core": "workspace:*",
+    "@supabase/supabase-js": "^2.49.4",
+    "@types/better-sqlite3": "^7.6.13",
+    "commander": "^14.0.2",
+    "dotenv": "^16.4.7",
+    "esbuild": "^0.25.0",
+    "open": "^10.1.0",
+    "p-limit": "^6.2.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "author": "Michael Collins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mikephii/ophanim.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/Mikephii/ophanim#readme",
+  "bugs": {
+    "url": "https://github.com/Mikephii/ophanim/issues"
+  },
+  "description": "AI security review and documentation for your codebase, from the command line",
+  "keywords": [
+    "security",
+    "sast",
+    "static-analysis",
+    "claude",
+    "ai",
+    "code-review",
+    "documentation"
+  ]
+}

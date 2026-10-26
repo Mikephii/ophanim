@@ -1,0 +1,37 @@
+{
+  "name": "ophan-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ophan: AI security analysis for your codebase, inside your editor",
+  "author": "Michael Collins",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mikephii/ophanim.git"
+  },
+  "packageManager": "pnpm@10.11.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "tsx packages/cli/src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "rebuild-native": "pnpm rebuild better-sqlite3",
+    "vs:sideload": "cd packages/vscode && pnpm build && pnpm build:native && npx @vscode/vsce package --no-dependencies -o ophan-local.vsix && code --install-extension ophan-local.vsix && echo '✓ Installed. Reload VS Code window to activate.'",
+    "pub:core": "cd packages/core && pnpm publish --access public --no-git-checks",
+    "pub:cli": "cd packages/cli && pnpm publish --access public --no-git-checks",
+    "pub:all": "pnpm pub:core && pnpm pub:cli",
+    "notices": "tsx scripts/third-party-notices.mts",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "dotenv": "^17.2.3",
+    "tsx": "^4.21.0",
+    "vitest": "^3.0.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "node-abi@^4": "^4.40.0"
+    }
+  }
+}
