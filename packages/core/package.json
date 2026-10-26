@@ -31,7 +31,7 @@
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
+    "@anthropic-ai/sdk": "^1.1.0",
     "better-sqlite3": "^12.11.1",
     "glob": "^13.0.0",
     "graphology": "^0.26.0",
