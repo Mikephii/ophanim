@@ -1,0 +1,163 @@
+{
+  "name": "ophan",
+  "publisher": "ophan",
+  "displayName": "Ophan",
+  "description": "AI security review in your editor: findings on the exact line, data flow, and docs for every function",
+  "version": "0.1.0",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.107.0"
+  },
+  "icon": "resources/icons/ophan_logo.png",
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "npm run build:webview && node esbuild.mjs && npm run package:webview && cp ../../THIRD_PARTY_NOTICES.md .",
+    "build:webview": "cd ../webview && npm run build",
+    "package:webview": "mkdir -p webview-dist && cp -r ../webview/dist/* webview-dist/",
+    "rebuild-native": "electron-rebuild -f -w better-sqlite3",
+    "build:native": "./scripts/build-native.sh",
+    "verify:vsix": "./scripts/verify-vsix.sh",
+    "detect-abi": "./scripts/detect-abi.sh",
+    "watch": "tsc -watch",
+    "pretest": "node -e \"new (require('better-sqlite3'))(':memory:')\" 2>/dev/null || npx node-gyp rebuild --directory=$(node -e \"process.stdout.write(require('path').dirname(require.resolve('better-sqlite3/package.json')))\")",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
+    "@ophan/cli": "workspace:*",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/vscode": "^1.107.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.11.1"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "ophan.openPanel",
+        "title": "Ophan: Open",
+        "icon": {
+          "light": "resources/icons/ophan.svg",
+          "dark": "resources/icons/ophan-dark.svg"
+        }
+      },
+      {
+        "command": "ophan.analyzeNow",
+        "title": "Ophan: Analyze Now"
+      },
+      {
+        "command": "ophan.signIn",
+        "title": "Ophan: Sign In"
+      },
+      {
+        "command": "ophan.showFunction",
+        "title": "Ophan: View Function Details"
+      },
+      {
+        "command": "ophan.openStatusView",
+        "title": "Ophan: View Status"
+      },
+      {
+        "command": "ophan.statusBarMenu",
+        "title": "Ophan: Control Panel"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "ophan.showFunction",
+          "when": "false"
+        },
+        {
+          "command": "ophan.statusBarMenu",
+          "when": "false"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "ophan.openPanel",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Ophan",
+      "properties": {
+        "ophan.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your Anthropic API key for Claude analysis. Get one at console.anthropic.com",
+          "order": 1
+        },
+        "ophan.autoAnalyze": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically analyze files when they change (watch mode)",
+          "order": 2
+        },
+        "ophan.serverUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "URL of your self-hosted Ophan server, e.g. `https://ophan.example.com`. Leave empty to keep everything local (no sign-in, no sync). See the [self-hosting guide](https://github.com/Mikephii/ophanim/blob/main/docs/self-hosting.md).",
+          "order": 3
+        },
+        "ophan.autoSync": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically sync analysis to your Ophan server after each analysis batch (only when Server Url is set)",
+          "order": 4
+        },
+        "ophan.showDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show security findings as squiggly underlines and in the Problems panel",
+          "order": 5
+        },
+        "ophan.showGutterIcons": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show shield icons in the editor gutter next to security findings",
+          "order": 6
+        }
+      }
+    }
+  },
+  "author": "Michael Collins",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mikephii/ophanim.git",
+    "directory": "packages/vscode"
+  },
+  "homepage": "https://github.com/Mikephii/ophanim#readme",
+  "bugs": {
+    "url": "https://github.com/Mikephii/ophanim/issues"
+  },
+  "qna": "https://github.com/Mikephii/ophanim/issues",
+  "galleryBanner": {
+    "color": "#0a0a0a",
+    "theme": "dark"
+  },
+  "keywords": [
+    "security",
+    "sast",
+    "vulnerability",
+    "sql injection",
+    "xss",
+    "claude",
+    "ai",
+    "code review",
+    "documentation"
+  ]
+}

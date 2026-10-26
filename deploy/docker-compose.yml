@@ -1,0 +1,22 @@
+# Ophan server: the web dashboard and the sync endpoint the CLI and extension talk to.
+# Supabase (Postgres + Auth) runs separately: Supabase Cloud, or the official self-hosted
+# Supabase stack. See docs/self-hosting.md.
+#
+#   cp deploy/.env.example deploy/.env   # fill it in
+#   docker compose -f deploy/docker-compose.yml up -d
+services:
+  webapp:
+    # Build from this checkout. To use a published image instead, replace `build` with:
+    #   image: ghcr.io/mikephii/ophan-webapp:latest
+    build:
+      context: ..
+      dockerfile: packages/webapp/Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${OPHAN_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

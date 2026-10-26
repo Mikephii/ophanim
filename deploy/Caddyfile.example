@@ -1,0 +1,5 @@
+# TLS in front of the Ophan webapp. Caddy fetches and renews the certificate automatically.
+#   caddy run --config deploy/Caddyfile.example
+ophan.example.com {
+	reverse_proxy 127.0.0.1:3000
+}

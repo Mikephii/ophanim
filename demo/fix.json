@@ -1,0 +1,14 @@
+{
+  "file": "src/routes/users.ts",
+  "comment": "The on-camera fix in 03-fix. The rig types `to` over each `from` line exactly, so the fixed function's hash matches the one analyzed ahead of time.",
+  "lines": [
+    {
+      "from": "  const sql = \"SELECT id, email FROM users WHERE name = '\" + name + \"'\";",
+      "to": "  const sql = \"SELECT id, email FROM users WHERE name = $1\";"
+    },
+    {
+      "from": "  return db.query(sql);",
+      "to": "  return db.query(sql, [name]);"
+    }
+  ]
+}

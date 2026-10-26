@@ -1,0 +1,23 @@
+# Secret scanning config (used by CI and `gitleaks dir .` / `gitleaks git .`).
+# Extends the default rules; only deliberate, fake example secrets are allowlisted.
+title = "ophan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fake secrets in teaching material, docs placeholders and the demo app"
+paths = [
+  # Vulnerable-vs-safe code examples shown in the Learn section
+  '''packages/(webapp|webview)/src/data/security-explainers\.ts''',
+  # The deliberately vulnerable sample app the demo videos are recorded from
+  '''demo/sample-app/.*''',
+  # Build output (gitignored; only matters for `gitleaks dir .` on a built checkout)
+  '''(^|/)(dist|webview-dist|\.output|node_modules)/''',
+]
+regexes = [
+  # Truncated placeholders like eyJ... in docs and env examples
+  '''eyJ\.\.\.''',
+  # A truncated, made-up cookie chunk in docs/architecture/webapp-auth.md
+  '''JleHAiOjE3MTg5MDEyMzQsImlh\.\.\.''',
+]
