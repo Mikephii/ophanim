@@ -18,7 +18,9 @@
   <a href="https://open-vsx.org/extension/ophan/ophan"><img alt="Open VSX" src="https://img.shields.io/open-vsx/v/ophan/ophan.svg?label=Open%20VSX"></a>
 </p>
 
-<!-- VIDEO 00-hero.mp4: drag the file here in the GitHub web editor, then delete this comment -->
+
+https://github.com/user-attachments/assets/fccb5db0-c2d0-4927-8743-b74bcbe2cf03
+
 
 ## What it does
 
@@ -52,42 +54,57 @@ npx @ophan/cli watch     # analyze, then re-analyze on every save
 One command analyzes every function; after that, watch mode keeps up as you save.
 
 <!-- VIDEO 01-analyze.mp4 -->
+https://github.com/user-attachments/assets/c8de8721-09b0-4fc8-b425-bf69a9262e1f
 
 ### Findings on the exact line
 
 Each finding sits on the line that causes it, with severity, an explanation and how to fix it.
 
 <!-- VIDEO 02-findings.mp4 -->
+https://github.com/user-attachments/assets/743601e0-d727-4b2d-ae24-25e2ee8dcae2
+
+
 
 ### Fix it and it's gone
 
 Edit a flagged line and its squiggle disappears immediately. Re-analysis confirms the fix a few seconds later. If the problem is still there, the squiggle comes back on the right line.
 
 <!-- VIDEO 03-fix.mp4 -->
+https://github.com/user-attachments/assets/19eccbf7-fc01-4f3e-8748-646262e710fc
+
 
 ### Follow the data
 
 See which functions handle user input, PII and credentials, and where they go.
 
 <!-- VIDEO 04-dataflow.mp4 -->
+https://github.com/user-attachments/assets/dcbbe0b0-fc93-4e5f-b746-2e7ead6d2936
+
 
 ### Every function documented
 
 CodeLens above each function; click for parameters, return value and findings.
 
 <!-- VIDEO 05-docs.mp4 -->
+https://github.com/user-attachments/assets/0743029d-e667-49cc-95a0-0e0f87d3f4a8
+
 
 ### The dashboard
 
 Security posture and top issues inside the editor, then the architecture docs Ophan writes for your codebase (`ophan graph --summarize`).
 
 <!-- VIDEO 06-dashboard.mp4 -->
+https://github.com/user-attachments/assets/1700f7f8-0006-48a8-acca-4ad2a516e30c
+
 
 ### From the terminal
 
 The same analysis from the CLI, for any editor or CI. Unchanged functions come straight from the cache.
 
 <!-- VIDEO 07-cli.mp4 -->
+https://github.com/user-attachments/assets/c4dc6329-6015-44c8-9e96-1ad7d4d5f003
+
+
 
 ## How it works
 
