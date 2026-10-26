@@ -22,11 +22,11 @@ jobs:
       vscode-changed: ${{ steps.versions.outputs.vscode-changed }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -73,7 +73,7 @@ jobs:
           check_npm_version "cli" "@ophan/cli" "cli-changed"
           check_vscode_version
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: build-output
           path: |
@@ -96,13 +96,13 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # pnpm is needed for `pnpm pack` which replaces workspace:* protocol
       # references with real version numbers in the tarball.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
@@ -110,7 +110,7 @@ jobs:
       # Latest npm required for OIDC trusted publishing token exchange
       - run: npm install -g npm@latest
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-output
           path: packages/
@@ -139,13 +139,13 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # pnpm is needed for `pnpm pack` which replaces workspace:* protocol
       # references with real version numbers in the tarball.
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
@@ -157,7 +157,7 @@ jobs:
       # (it needs @ophan/core's package.json to determine the version number)
       - run: pnpm install --frozen-lockfile
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-output
           path: packages/
@@ -205,15 +205,15 @@ jobs:
       npm_config_arch: ${{ matrix.npm_config_arch }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-output
           path: packages/
@@ -253,7 +253,7 @@ jobs:
           fi
           echo "VSIX size: $(du -sh "$VSIX" | cut -f1)"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vsix-${{ matrix.target }}
           path: packages/vscode/*.vsix
@@ -267,7 +267,7 @@ jobs:
     environment: production
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           pattern: vsix-*
           merge-multiple: true
@@ -334,14 +334,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         if: needs.build-vscode.result == 'success'
         with:
           pattern: vsix-*
           merge-multiple: true
           path: vsix
 
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: vsix/*.vsix
@@ -356,20 +356,20 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-qemu-action@v4
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ghcr.io/${{ github.repository_owner }}/ophan-webapp
           tags: |
@@ -378,7 +378,7 @@ jobs:
             type=raw,value=latest
 
       # Supabase settings are read at container start, so the image holds no config.
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: .
           file: packages/webapp/Dockerfile
