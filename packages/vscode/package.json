@@ -36,7 +36,7 @@
     "@ophan/cli": "workspace:*",
     "@types/better-sqlite3": "^7.6.0",
     "@types/vscode": "^1.107.0",
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "typescript": "^5.9.3",
     "vitest": "^3.0.5"
   },
